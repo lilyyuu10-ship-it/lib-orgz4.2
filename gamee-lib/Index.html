@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Library Organizer</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  text-align:center;
+  background:#111;
+  color:white;
+}
+
+#game{
+  width:800px;
+  height:500px;
+  margin:auto;
+  position:relative;
+  background-image:url("pixiv.webp");
+  background-size:cover;
+  border:4px solid black;
+  overflow:hidden;
+}
+
+/* rak */
+#rak{
+  position:absolute;
+  top:100px;
+  left:120px;
+  width:560px;
+  z-index:1;
+}
+
+#shelf{
+  position:absolute;
+  top:120px;
+  left:150px;
+  display:grid;
+  grid-template-columns:repeat(5,70px);
+  grid-template-rows:repeat(2,70px);
+  gap:10px;
+  z-index:2;
+}
+
+.slot{
+  width:70px;
+  height:70px;
+}
+
+/* buku */
+.book{
+  width:60px;
+  height:60px;
+  background-size:contain;
+  background-repeat:no-repeat;
+  cursor:pointer;
+  position:absolute;
+  z-index:3;
+  opacity:0;
+  transition: all 0.5s ease;
+}
+.book.show{
+  opacity:1;
+}
+
+#timer{
+  font-size:24px;
+  margin:10px;
+}
+
+#jumpscare{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:black;
+  justify-content:center;
+  align-items:center;
+  z-index:10;
+}
+
+#jumpscare img{
+  width:400px;
+}
+
+audio{display:none;}
+
+#startBtn{
+  font-size:20px;
+  padding:10px 20px;
+  cursor:pointer;
+  margin-top:20px;
+}
+
+/* CONFETTI */
+.confetti{
+  position:fixed;
+  width:10px;
+  height:10px;
+  top:-10px;
+  z-index:999;
+  animation:fall linear forwards;
+}
+
+/* animasi */
+@keyframes fall{
+  to{
+    transform: translateY(100vh) rotate(360deg);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h2>📚 Susun Buku ke Rak!</h2>
+<div id="timer">Time: 15</div>
+
+<button id="startBtn">Mulai Game</button>
+
+<div id="game">
+<img src="rak.webp" id="rak">
+<div id="shelf"></div>
+</div>
+
+<div id="jumpscare">
+<img src="ghost.jpg">
+</div>
+
+<!-- AUDIO -->
+<audio id="bgmusic" loop>
+  <source src="chill.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="scare">
+  <source src="horror.wav" type="audio/wav">
+</audio>
+
+<!-- SOUND MENANG -->
+<audio id="winSound">
+  <source src="winn.wav" type="audio/wav">
+</audio>
+
+<script>
+let shelf = document.getElementById("shelf")
+let bookImages = [
+  "4.png","5.png","7.png","12.png","20.png","21.png",
+  "22.png","23.png","24.png","25.png","26.png"
+]
+let totalSlots = 10
+let bgMusic = document.getElementById("bgmusic")
+let scare = document.getElementById("scare")
+let winSound = document.getElementById("winSound")
+
+/* buat slot rak */
+for(let i=0;i<totalSlots;i++){
+  let slot=document.createElement("div")
+  slot.className="slot"
+  shelf.appendChild(slot)
+}
+
+/* spawn buku */
+function spawnBook(){
+  let randomBook = bookImages[Math.floor(Math.random()*bookImages.length)]
+  let book = document.createElement("div")
+  book.className = "book"
+  book.style.backgroundImage = `url(${randomBook})`
+
+  let posX = Math.random()*650
+  let posY = Math.random()*350
+  book.style.left = posX + "px"
+  book.style.top = posY + "px"
+
+  document.getElementById("game").appendChild(book)
+
+  setTimeout(() => { book.classList.add("show") }, 50)
+
+  book.onclick = function(){
+    let slots = document.querySelectorAll(".slot")
+    for(let slot of slots){
+      if(slot.children.length===0){
+        slot.appendChild(book)
+        book.style.position="static"
+        checkWin()
+        break
+      }
+    }
+  }
+}
+
+/* spawn semua buku */
+function spawnAllBooks(){
+  for(let i=0;i<bookImages.length;i++){
+    spawnBook()
+  }
+}
+
+/* CONFETTI */
+function createConfetti(){
+  for(let i=0;i<120;i++){
+    let conf = document.createElement("div")
+    conf.className = "confetti"
+
+    conf.style.left = Math.random()*window.innerWidth + "px"
+    conf.style.backgroundColor = `hsl(${Math.random()*360},100%,50%)`
+    conf.style.animationDuration = (Math.random()*3+2)+"s"
+
+    document.body.appendChild(conf)
+
+    setTimeout(()=>conf.remove(),5000)
+  }
+}
+
+/* cek menang */
+function checkWin(){
+  let slots = document.querySelectorAll(".slot")
+  let filled = 0
+
+  for(let slot of slots){
+    if(slot.children.length>0) filled++
+  }
+
+  if(filled>=totalSlots){
+    bgMusic.pause()
+    winSound.play()
+    createConfetti()
+
+    setTimeout(()=>{
+      alert("🎉 Kamu berhasil merapikan perpustakaan!")
+      location.reload()
+    },2000)
+  }
+}
+
+/* timer */
+let time = 15
+let timer
+
+document.getElementById("startBtn").onclick = function(){
+  this.style.display = "none"
+  spawnAllBooks()
+  bgMusic.play()
+
+  timer = setInterval(function(){
+    time--
+    document.getElementById("timer").innerText = "Time: "+time
+
+    if(time<=0){
+      clearInterval(timer)
+      bgMusic.pause()
+      bgMusic.currentTime=0
+      document.getElementById("jumpscare").style.display="flex"
+      scare.play()
+    }
+  },1000)
+}
+</script>
+
+</body>
+</html>
